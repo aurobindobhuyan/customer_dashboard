@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        Final Project for Customer Dashboard
+    </title>
+    <style>
+        .my-custom-scrollbar {
+            position: relative;
+            height: 300px;
+            overflow: auto;
+        }
+
+        .table-wrapper-scroll-y {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root">
+
+    </div>
+
+    <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+    <!-- Google Pie Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+
+    <script type="text/babel">
+        const rootHandle = document.getElementById('root')
+
+        // Your code goes here 
+        const { useState, useEffect } = React
+
+        //Helper Functions
+        function totalCustomer(customer) {
+            const result = []
+            customer.forEach(ele => {
+                const find = result.find(e => e.Phone === ele.Phone)
+                !find ? result.push(ele) : null
+            })
+            return result
+        }
+        function totalAmount(data) {
+            let count = 0
+            data.forEach(ele => {
+                count += ele.Amount
+            })
+            return count
+        }
+
+        //Components
+        const OrderTable = (props) => {
+            const { obj } = props
+
+            return (
+                <table className="table table-dark ">
+                    <thead>
+                        <tr style={{ textAlign: 'center' }}>
+                            <th>Number of Orders</th>
+                            <th>Count of Customers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {Object.keys(obj).map((ele, i) => {
+                            return (
+                                <tr style={{ textAlign: 'center' }} key={i}>
+                                    <td>{ele}</td>
+                                    <td>{obj[ele]}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            )
+        }
+
+        const PieChart = (props) => {
+            const { obj } = props
+
+            google.charts.load('current', { 'packages': ['corechart'] })
+            google.charts.setOnLoadCallback(drawChart)
+
+            const result = Object.keys(obj).reduce((a, b) => {
+                a.push([b, obj[b]])
+                return a
+            }, [['Order', 'Orders per Customer']])
+
+            function drawChart() {
+                const data = google.visualization.arrayToDataTable(result)
+                const options = {
+                    title: 'Order Count',
+                    is3D: true
+                }
+                const chart = new google.visualization.PieChart(document.getElementById('piechart'));
+                chart.draw(data, options);
+            }
+
+            return (
+                <div>
+                    <div id="piechart" style={{ width: '880px', height: '280px' }}>
+                    </div>
+                </div>
+            )
+        }
+
+        const OrderDistribution = (props) => {
+            const { jsonData, uniqueCustomer } = props
+
+            function updatedObj() {
+                const obj = { 1: 0, 2: 0, 3: 0, 4: 0, '5+': 0 }
+                uniqueCustomer.forEach(ele => {
+                    const filter = jsonData.filter(e => e.Phone === ele.Phone)
+                    filter.length >= 5 ? obj['5+']++ : obj[filter.length]++
+                })
+                return obj
+            }
+
+            return (
+                <div>
+                    <h2 style={{ textAlign: 'center' }}>Order Distribution</h2>
+                    <div className="row">
+                        <div className="col-md-4">
+                            <OrderTable obj={updatedObj()} />
+                        </div>
+                        <div className="col-md-8">
+                            <PieChart obj={updatedObj()} />
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        const CustomerTable = (props) => {
+            const { allUsers, func } = props
+
+            return (
+                <div className="table-wrapper-scroll-y my-custom-scrollbar">
+                    <table id="dtVerticalScrollExample" className="table table-bordered table-striped mb-0 table-light table-hover table-striped">
+                        <thead>
+                            <tr style={{ textAlign: 'center' }} className="table table-dark">
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                allUsers.map((ele, i) => {
+                                    return (
+                                        <tr style={{ textAlign: 'center' }} key={i}>
+                                            <td>{i + 1}</td>
+                                            <td>{ele.Name}</td>
+                                            <td>{ele.Phone}</td>
+                                            <td><button type="button" onClick={() => { func(ele.Phone) }} className="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                                                Show Details
+                                            </button></td>
+                                        </tr>
+                                    )
+                                })
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            )
+        }
+
+        const DropDown = (props) => {
+            const { handleDropDown } = props
+            return (
+                <form>
+                    <label>Sort by Name</label><br />
+                    <select onChange={handleDropDown}>
+                        <option value='Select'>Select</option>
+                        <option value="a-z">A - Z</option>
+                        <option value="z-a">Z - A</option>
+                    </select>
+                </form>
+            )
+        }
+
+        const Search = (props) => {
+            const { inputField, handleInputField } = props
+            return (
+                <input type="text" className="form-control" value={inputField} placeholder="search by name or phone" onChange={handleInputField} />
+            )
+        }
+
+        const DisplayModal = (props) => {
+            const { array } = props
+
+            return (
+                <div className="modal fade" id="exampleModal" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="card text-dark bg-light mb-3">
+                                <h5 className="card-header">{array[0].Name && array[0].Name.toUpperCase()} - <a>{array[0].Phone}</a></h5>
+                                <div className="card-body">
+                                    <p className="card-text">Order Count - <b>{array.length}</b>,  Total Amount- <b>₹{totalAmount(array)}</b></p>
+                                </div>
+                            </div>
+                            <div className="modal-body">
+                                <table className="table table-success table-striped">
+                                    <thead>
+                                        <tr style={{ textAlign: 'center' }} className="table-dark">
+                                            <th>#</th>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {array.map((ele, i) => {
+                                            return (
+                                                <tr style={{ textAlign: 'center' }} key={i}>
+                                                    <td>{i + 1}</td>
+                                                    <td>{ele.Date}</td>
+                                                    <td>₹{ele.Amount}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        const CustomerContainer = (props) => {
+            const { jsonData, uniqueCustomer } = props
+            const [inputField, setInputField] = React.useState('')
+            const [modalArray, setModalArray] = React.useState([{}])
+            const [sortedUniqueCustomer, setSortedUniqueCustomer] = useState([])
+
+            useEffect(() => {
+                setSortedUniqueCustomer(uniqueCustomer)
+            }, [uniqueCustomer])
+
+            //Callback funtions for DropDown
+            const handleDropDown = (e) => {
+                const array = [...sortedUniqueCustomer]
+                const arr = [...sortedUniqueCustomer]
+                const value = e.target.value
+                const result = array.sort((a, b) => a.Name.localeCompare(b.Name))
+                const reverse = arr.sort((a, b) => a.Name.localeCompare(b.Name)).reverse()
+                if (value === 'a-z') {
+                    setSortedUniqueCustomer(result)
+                } else if (value == 'z-a') {
+                    setSortedUniqueCustomer(reverse)
+                } else if (value == 'Select') {
+                    setSortedUniqueCustomer(uniqueCustomer)
+                }
+            }
+            //Callback funtions for Search inputField
+            const handleInputField = (e) => {
+                const result = e.target.value
+                setInputField(result)
+                const filteredUniqueCustomer = uniqueCustomer.filter(ele => ele.Name.toLowerCase().includes(result.toLowerCase()) || String(ele.Phone).includes(result))
+                setSortedUniqueCustomer(filteredUniqueCustomer)
+            }
+            //Callback funtions for pass info to modal
+            const handleButtonClick = (Phone) => {
+                const result = jsonData.filter(ele => ele.Phone === Phone)
+                setModalArray(result)
+            }
+
+            return (
+                <div>
+                    <div className="row">
+                        <div className="col-md-4">
+                            <h2>Listing Customers - {sortedUniqueCustomer.length}</h2>
+                        </div>
+                        <div className="col-md-4">
+                            <DropDown handleDropDown={handleDropDown} />
+                        </div>
+                        <div className="col-md-4">
+                            <Search inputField={inputField} handleInputField={handleInputField} />
+                        </div>
+                    </div>
+                    <div className="row">
+                        <div className="col-md-12">
+                            <CustomerTable func={handleButtonClick} allUsers={sortedUniqueCustomer} />
+                        </div>
+                    </div>
+                    <DisplayModal array={modalArray} />
+                </div>
+            )
+        }
+
+        const StatsContainer = (props) => {
+            const { data, text } = props
+            return (
+                <div className="col-md-4" style={{ textAlign: '-webkit-center' }}>
+                    <div className="card text-dark bg-info mb-4" style={{ maxWidth: '18rem', textAlign: '-webkit-center' }}>
+                        <h1 className="card-header">{data}</h1>
+                        <h3 className="card-body">{text}</h3>
+                    </div>
+                </div>
+            )
+        }
+
+        const CustomerDashboard = (props) => {
+            const { jsonData, uniqueCustomer } = props
+
+            return (
+                <div className="row">
+                    <StatsContainer data={jsonData.length} text="Orders" />
+                    <StatsContainer data={totalAmount(jsonData)} text="Amount" />
+                    <StatsContainer data={uniqueCustomer.length} text="Customers" />
+                </div>
+            )
+        }
+
+        const App = (props) => {
+            const [jsonData, setJsonData] = useState([])
+
+            useEffect(() => {
+                fetch('./customer-data.json')
+                    .then((response) => {
+                        return response.json()
+                    })
+                    .then((data) => {
+                        setJsonData(data)
+                    })
+            }, [])
+
+            const uniqueCustomer = totalCustomer(jsonData)
+
+            return (
+                <div className="container-fluid">
+                    <h1 style={{ textAlign: 'center' }}>CUSTOMER DASHBOARD</h1>
+                    <CustomerDashboard jsonData={jsonData} uniqueCustomer={uniqueCustomer} />
+                    <CustomerContainer jsonData={jsonData} uniqueCustomer={uniqueCustomer} />
+                    <OrderDistribution jsonData={jsonData} uniqueCustomer={uniqueCustomer} />
+                </div>
+            )
+        }
+
+        ReactDOM.render(<App />, rootHandle)
+    </script>
+</body>
+
+</html>
